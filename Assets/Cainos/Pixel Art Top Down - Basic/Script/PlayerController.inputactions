@@ -1,5 +1,5 @@
 {
-    "name": "playercontroller",
+    "name": "PlayerController",
     "maps": [
         {
             "name": "movement",
@@ -70,6 +70,17 @@
                     "action": "movement",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "60836915-23fa-4ec1-8dc0-a199b9c0144c",
+                    "path": "<Gamepad>/leftStick",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "movement",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }
