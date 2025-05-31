@@ -7,6 +7,8 @@ public class playermovement : MonoBehaviour
     public bool FacingLeft { get { return facingLeft; } set { facingLeft = value; } }
 
     [SerializeField] private float moveSpeed = 1f;
+    [SerializeField] private GameObject levelCompletePanel; // Tambahkan referensi ke panel UI
+
     private PlayerController playerControl;
     private Vector2 movement;
     private Rigidbody2D rb;
@@ -35,7 +37,7 @@ public class playermovement : MonoBehaviour
     private void Update()
     {
         PlayerInput();
-        anim.SetFloat("Speed", movement.magnitude);  // Ubah parameter animasi
+        anim.SetFloat("Speed", movement.magnitude);
     }
 
     private void FixedUpdate()
@@ -47,7 +49,6 @@ public class playermovement : MonoBehaviour
     private void PlayerInput()
     {
         movement = playerControl.movement.movement.ReadValue<Vector2>();
-        // Debug.Log("Movement: " + movement);
     }
 
     private void Move()
@@ -66,6 +67,23 @@ public class playermovement : MonoBehaviour
         {
             sprite.flipX = false;
             FacingLeft = false;
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Door"))
+        {
+            Debug.Log("Player triggered the door! Showing level complete panel...");
+
+            if (levelCompletePanel != null)
+            {
+                levelCompletePanel.SetActive(true);
+            }
+
+            // Hentikan pergerakan dan input player
+            movement = Vector2.zero;
+            this.enabled = false;
         }
     }
 }
