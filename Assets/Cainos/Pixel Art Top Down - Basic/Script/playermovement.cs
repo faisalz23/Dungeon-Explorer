@@ -1,13 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections;
 using UnityEngine;
+using TMPro;
 
 public class playermovement : MonoBehaviour
 {
     public bool FacingLeft { get { return facingLeft; } set { facingLeft = value; } }
 
     [SerializeField] private float moveSpeed = 1f;
-    [SerializeField] private GameObject levelCompletePanel; // Tambahkan referensi ke panel UI
+    [SerializeField] private GameObject levelCompletePanel;
 
     private PlayerController playerControl;
     private Vector2 movement;
@@ -16,12 +16,82 @@ public class playermovement : MonoBehaviour
     public SpriteRenderer sprite;
     private bool facingLeft = false;
 
+    [Header("Health System")]
+    public int maxHealth = 100;
+    private int currentHealth;
+    public TextMeshProUGUI healthText;
+    public HPBarController hpBarUI;
+
+    [Header("Knockback Settings")]
+    [SerializeField] private float knockBackTime = 0.2f;
+    [SerializeField] private float knockBackThrust = 10f;
+    private bool isKnockedBack = false;
+
+    [Header("Damage Cooldown")]
+    private float lastDamageTime = 0f;
+    private float damageCooldown = 0.1f;
+
+    [Header("Coin System")]
+    public int currentCoin = 0;
+    public TextMeshProUGUI coinText;
+
+    public void TakeDamage(int damage, Vector2 direction, bool applyKnockback)
+    {
+        if (Time.time < lastDamageTime + damageCooldown) return;
+        lastDamageTime = Time.time;
+
+        if (applyKnockback && isKnockedBack) return;
+
+        currentHealth -= damage;
+        if (currentHealth <= 0)
+        {
+            currentHealth = 0;
+            Debug.Log("Player Mati");
+            // Tambahkan animasi atau efek kematian
+        }
+
+        UpdateHealthUI();
+
+        if (applyKnockback)
+            StartCoroutine(HandleKnockback(direction.normalized));
+    }
+
+    // Overload untuk default knockback true
+    public void TakeDamage(int damage, Vector2 direction)
+    {
+        TakeDamage(damage, direction, true);
+    }
+
+    private IEnumerator HandleKnockback(Vector2 direction)
+    {
+        isKnockedBack = true;
+        rb.velocity = Vector2.zero;
+
+        Vector2 force = direction * knockBackThrust * rb.mass;
+        rb.AddForce(force, ForceMode2D.Impulse);
+
+        yield return new WaitForSeconds(knockBackTime);
+        rb.velocity = Vector2.zero;
+        isKnockedBack = false;
+    }
+
+    private void UpdateHealthUI()
+    {
+        if (healthText != null)
+            healthText.text = "Health: " + currentHealth;
+
+        if (hpBarUI != null)
+            hpBarUI.SetHP(currentHealth, maxHealth);
+    }
+
     private void Awake()
     {
         playerControl = new PlayerController();
         rb = GetComponent<Rigidbody2D>();
         anim = GetComponent<Animator>();
         sprite = GetComponent<SpriteRenderer>();
+        currentHealth = maxHealth;
+        UpdateHealthUI();
     }
 
     private void OnEnable()
@@ -36,12 +106,16 @@ public class playermovement : MonoBehaviour
 
     private void Update()
     {
+        if (isKnockedBack) return;
+
         PlayerInput();
         anim.SetFloat("Speed", movement.magnitude);
     }
 
     private void FixedUpdate()
     {
+        if (isKnockedBack) return;
+
         AdjustPlayerFacingDirection();
         Move();
     }
@@ -77,13 +151,17 @@ public class playermovement : MonoBehaviour
             Debug.Log("Player triggered the door! Showing level complete panel...");
 
             if (levelCompletePanel != null)
-            {
                 levelCompletePanel.SetActive(true);
-            }
 
-            // Hentikan pergerakan dan input player
             movement = Vector2.zero;
             this.enabled = false;
         }
+    }
+
+    public void addCoin(int amount)
+    {
+        currentCoin += amount;
+        if (coinText != null)
+            coinText.text = "Coin : " + currentCoin.ToString();
     }
 }

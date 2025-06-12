@@ -6,16 +6,25 @@ public class Attack : MonoBehaviour
     public Animator animator;
     public float attackCooldown = 0.1f;
     private float nextAttackTime = 0f;
+    public GameObject attackArea;
+
+    void Start()
+    {
+        if (attackArea != null)
+        {
+            attackArea.SetActive(false); // Pastikan off di awal
+        }
+    }
 
     void Update()
     {
-        // Cek apakah klik kiri mouse dan pointer tidak di UI
-        //if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
-        //{
-         //   StartAttack();
-        //}
+        // Serang jika klik kiri dan tidak di atas UI
+        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        {
+            StartAttack();
+        }
 
-        // Untuk stop attack, biasanya pointer up bisa langsung stop tanpa cek UI
+        // Hentikan animasi serangan saat tombol mouse dilepas
         if (Input.GetMouseButtonUp(0))
         {
             StopAttack();
@@ -34,5 +43,18 @@ public class Attack : MonoBehaviour
     public void StopAttack()
     {
         animator.SetBool("IsAttacking", false);
+    }
+
+    // Fungsi ini dipanggil lewat event di Animation
+    public void EnableAttackArea()
+    {
+        if (attackArea != null)
+            attackArea.SetActive(true);
+    }
+
+    public void DisableAttackArea()
+    {
+        if (attackArea != null)
+            attackArea.SetActive(false);
     }
 }
