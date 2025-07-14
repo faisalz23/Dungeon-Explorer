@@ -35,6 +35,9 @@ public class playermovement : MonoBehaviour
     public int currentCoin = 0;
     public TextMeshProUGUI coinText;
 
+    private PlayerAudioManager audioManager;
+    private bool isFootstepPlaying = false;
+
     public void TakeDamage(int damage, Vector2 direction, bool applyKnockback)
     {
         if (Time.time < lastDamageTime + damageCooldown) return;
@@ -56,7 +59,6 @@ public class playermovement : MonoBehaviour
             StartCoroutine(HandleKnockback(direction.normalized));
     }
 
-    // Overload untuk default knockback true
     public void TakeDamage(int damage, Vector2 direction)
     {
         TakeDamage(damage, direction, true);
@@ -92,6 +94,7 @@ public class playermovement : MonoBehaviour
         sprite = GetComponent<SpriteRenderer>();
         currentHealth = maxHealth;
         UpdateHealthUI();
+        audioManager = FindObjectOfType<PlayerAudioManager>();
     }
 
     private void OnEnable()
@@ -110,6 +113,21 @@ public class playermovement : MonoBehaviour
 
         PlayerInput();
         anim.SetFloat("Speed", movement.magnitude);
+
+        if (movement.magnitude > 0.1f)
+        {
+            if (!isFootstepPlaying)
+                StartCoroutine(PlayFootstepWithDelay());
+        }
+    }
+
+    private IEnumerator PlayFootstepWithDelay()
+    {
+        isFootstepPlaying = true;
+        if (audioManager != null)
+            audioManager.PlayFootstepSound();
+        yield return new WaitForSeconds(0.4f);
+        isFootstepPlaying = false;
     }
 
     private void FixedUpdate()
@@ -148,13 +166,32 @@ public class playermovement : MonoBehaviour
     {
         if (collision.CompareTag("Door"))
         {
-            Debug.Log("Player triggered the door! Showing level complete panel...");
+            Debug.Log("Player triggered the door.");
 
-            if (levelCompletePanel != null)
-                levelCompletePanel.SetActive(true);
+            if (EnemyTracker.instance != null && EnemyTracker.instance.AllEnemiesDefeated())
+            {
+                Debug.Log("All enemies defeated. Showing level complete panel...");
+                if (levelCompletePanel != null)
+                    levelCompletePanel.SetActive(true);
 
-            movement = Vector2.zero;
-            this.enabled = false;
+                movement = Vector2.zero;
+                this.enabled = false;
+
+                Collider2D doorCollider = collision.GetComponent<Collider2D>();
+                if (doorCollider != null)
+                {
+                    doorCollider.enabled = false;
+                }
+
+                if (audioManager != null)
+                    audioManager.PlayLevelCompleteSound();
+            }
+            else
+            {
+                Debug.Log("Belum semua musuh dikalahkan!");
+                Vector2 pushBack = (transform.position - collision.transform.position).normalized;
+                rb.MovePosition(rb.position + pushBack * 0.1f);
+            }
         }
     }
 
@@ -163,5 +200,8 @@ public class playermovement : MonoBehaviour
         currentCoin += amount;
         if (coinText != null)
             coinText.text = "Coin : " + currentCoin.ToString();
+
+        if (audioManager != null)
+            audioManager.PlayPickupSound();
     }
 }

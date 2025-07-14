@@ -18,9 +18,8 @@ public class Musuh : MonoBehaviour
     [Header("HP Settings")]
     public float maxHP = 100f;
     private float currentHP;
-    public Image hpBarFill; // assign dari Inspector (HPBar_Fill musuh)
+    public Image hpBarFill;
 
-    // Tambahan: untuk hindari hit berulang dari satu serangan
     private float lastHitTime = 0f;
     private float hitCooldown = 0.2f;
 
@@ -28,6 +27,8 @@ public class Musuh : MonoBehaviour
     public int attackDamage = 10;
     public float attackCooldown = 1f;
     private float lastAttackTime = 0f;
+
+    private bool isDead = false;
 
     void Start()
     {
@@ -37,17 +38,26 @@ public class Musuh : MonoBehaviour
 
         if (hpBarFill != null)
         {
-            hpBarFill.fillAmount = currentHP / maxHP;
+            hpBarFill.fillAmount = 1f;
         }
         else
         {
-        Debug.LogWarning("hpBarFill belum di-assign di Inspector!");
+            Debug.LogWarning("hpBarFill belum di-assign di Inspector!");
+        }
+
+        if (EnemyTracker.instance != null)
+        {
+            EnemyTracker.instance.RegisterEnemy();
+        }
+        else
+        {
+            Debug.LogWarning("EnemyTracker instance tidak ditemukan di scene!");
         }
     }
 
     void FixedUpdate()
     {
-        if (player == null) return;
+        if (isDead || player == null) return;
 
         float distanceToPlayer = Vector2.Distance(transform.position, player.position);
         chasingPlayer = distanceToPlayer < triggerRadius;
@@ -85,16 +95,15 @@ public class Musuh : MonoBehaviour
 
     public void TakeDamage(float amount)
     {
-        if (Time.time < lastHitTime + hitCooldown) return; // hindari spam hit
+        if (isDead || Time.time < lastHitTime + hitCooldown) return;
         lastHitTime = Time.time;
 
         currentHP -= amount;
         Debug.Log("Musuh kena damage: " + amount + ", sisa HP: " + currentHP);
 
-        // Update UI bar
         if (hpBarFill != null)
         {
-            hpBarFill.fillAmount = currentHP / maxHP;
+            hpBarFill.fillAmount = Mathf.Clamp01(currentHP / maxHP);
         }
 
         if (currentHP <= 0f)
@@ -105,18 +114,50 @@ public class Musuh : MonoBehaviour
 
     void Die()
     {
-        Destroy(gameObject); // Atau bisa animasi mati dulu
+        if (isDead) return;
+        isDead = true;
+
+        // Laporkan ke EnemyTracker
+        if (EnemyTracker.instance != null)
+        {
+            EnemyTracker.instance.EnemyDefeated();
+        }
+
+        // Tambahkan animasi kematian jika ada
+        if (anim != null)
+        {
+            anim.SetTrigger("Die");
+        }
+
+        // Matikan collider & rb supaya tidak interaksi lagi
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null) col.enabled = false;
+
+        rb.velocity = Vector2.zero;
+        rb.isKinematic = true;
+
+        // Hancurkan setelah 1 detik agar animasi bisa diputar
+        Destroy(gameObject, 1f);
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (Time.time < lastAttackTime + attackCooldown) return;
+        if (isDead || Time.time < lastAttackTime + attackCooldown) return;
 
         playermovement player = collision.GetComponent<playermovement>();
         if (player != null)
         {
-            player.TakeDamage(attackDamage, Vector2.zero, false); // false = no knockback
+            player.TakeDamage(attackDamage, Vector2.zero, false);
             lastAttackTime = Time.time;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        // Jaga-jaga kalau musuh dihancurkan di luar Die()
+        if (!isDead && EnemyTracker.instance != null)
+        {
+            EnemyTracker.instance.EnemyDefeated();
         }
     }
 }

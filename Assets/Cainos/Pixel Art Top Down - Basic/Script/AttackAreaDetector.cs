@@ -1,17 +1,30 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class AttackAreaDetector : MonoBehaviour
 {
-    public int damage = 25; // Sesuaikan tipe ke int jika EnemyHealth pakai int
+    public float damage = 25f;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        // Serang musuh
         if (collision.CompareTag("Enemy"))
         {
-            EnemyHealth enemy = collision.GetComponent<EnemyHealth>();
+            EnemyMovement enemy = collision.GetComponent<EnemyMovement>();
             if (enemy != null)
             {
                 enemy.TakeDamage(damage);
+                Debug.Log("✔ Serang musuh");
+            }
+        }
+
+        // Serang objek yang bisa dihancurkan
+        if (collision.CompareTag("Destructible"))
+        {
+            DestructibleObject destructible = collision.GetComponent<DestructibleObject>();
+            if (destructible != null)
+            {
+                destructible.TakeDamage(damage);
+                Debug.Log("✔ Serang objek destructible");
             }
         }
     }

@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public class Attack : MonoBehaviour
 {
@@ -8,27 +7,30 @@ public class Attack : MonoBehaviour
     private float nextAttackTime = 0f;
     public GameObject attackArea;
 
+    private bool isAttackingFromButton = false;
+
     void Start()
     {
         if (attackArea != null)
         {
-            attackArea.SetActive(false); // Pastikan off di awal
+            attackArea.SetActive(false);
         }
     }
 
     void Update()
     {
-        // Serang jika klik kiri dan tidak di atas UI
-        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+#if UNITY_EDITOR
+        // Hanya di editor: masih bisa pakai klik kiri
+        if (Input.GetMouseButtonDown(0))
         {
             StartAttack();
         }
 
-        // Hentikan animasi serangan saat tombol mouse dilepas
         if (Input.GetMouseButtonUp(0))
         {
             StopAttack();
         }
+#endif
     }
 
     public void StartAttack()
@@ -37,6 +39,9 @@ public class Attack : MonoBehaviour
         {
             animator.SetBool("IsAttacking", true);
             nextAttackTime = Time.time + attackCooldown;
+
+            // SFX (kalau ada)
+            FindObjectOfType<PlayerAudioManager>()?.PlayAttackSound();
         }
     }
 
@@ -45,7 +50,7 @@ public class Attack : MonoBehaviour
         animator.SetBool("IsAttacking", false);
     }
 
-    // Fungsi ini dipanggil lewat event di Animation
+    // Dipanggil oleh event di animasi
     public void EnableAttackArea()
     {
         if (attackArea != null)

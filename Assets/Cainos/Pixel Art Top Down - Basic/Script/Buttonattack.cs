@@ -3,7 +3,7 @@ using UnityEngine.EventSystems;
 
 public class Buttonattack : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-    public Attack attackScript;  // assign lewat inspector
+    public Attack attackScript;
 
     public void OnPointerDown(PointerEventData eventData)
     {
